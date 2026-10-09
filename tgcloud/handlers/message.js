@@ -1,7 +1,7 @@
 // Every incoming message: commands, or free text that becomes list items.
 import { api, db } from 'sdk';
 import { eq, and, desc } from 'sdk/db';
-import { spaces, batches } from '../schema.js';
+import { spaces, batches, users, members } from '../schema.js';
 import * as S from '../lib/store.js';
 import { processText, undoBatch } from '../lib/router.js';
 import { askClaude } from '../lib/ai.js';
@@ -155,6 +155,28 @@ async function handleCommand({ cmd, arg, message, chat, from, user, space, isPri
     } catch (e) {
       await send(chat.id, `Не получилось поставить кнопку меню: ${esc(e.description || e.message)}`);
     }
+    return;
+  }
+
+  if (cmd === 'debug') {
+    if (!isOwner) return;
+    const us = await db.select().from(users).all();
+    const sp = await db.select().from(spaces).all();
+    const ms = await db.select().from(members).all();
+    const lines = [
+      `<b>owner:</b> <code>${esc(String(owner))}</code>`,
+      `<b>ключ Claude:</b> ${(await S.getConfig('anthropic_key')) ? 'есть' : 'НЕТ'}`,
+      '',
+      `<b>users (${us.length}):</b>`,
+      ...us.map((u) => `  <code>${u.id}</code> ${esc(u.name)} — allowed=${u.allowed}`),
+      '',
+      `<b>spaces (${sp.length}):</b>`,
+      ...sp.map((x) => `  id=${x.id} chat=<code>${x.chatId}</code> ${x.kind} «${esc(x.title)}» setup=${x.setup}`),
+      '',
+      `<b>members (${ms.length}):</b>`,
+      ...ms.map((m) => `  space=${m.spaceId} user=<code>${m.userId}</code>`),
+    ];
+    await send(chat.id, lines.join('\n').slice(0, 3900));
     return;
   }
 }
