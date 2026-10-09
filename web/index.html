@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Атлас</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+
+<form id="bar" autocomplete="off">
+  <button type="button" id="dest" class="dest"></button>
+  <div class="barrow">
+    <textarea id="input" rows="1" placeholder="Что купить, сделать или обсудить?" aria-label="Новая запись"></textarea>
+    <button type="submit" id="send" aria-label="Записать">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</form>
+
+<div id="toast" role="status" hidden><span id="toast-text"></span><button type="button" id="toast-undo">Отменить</button></div>
+<div id="scrim" hidden></div>
+<section id="sheet" role="dialog" aria-modal="true" hidden></section>
+
+<script src="/app.js"></script>
+</body>
+</html>
