@@ -142,13 +142,22 @@ export const db = {
 /* ---------- Bot API, fetch, errors ---------- */
 export const calls = [];
 let msgId = 1000;
+// Кто в каких групповых чатах. Тесты наполняют через joinChat.
+export const chatMembers = new Map();
+export const joinChat = (chatId, ...userIds) => {
+  const set = chatMembers.get(chatId) || new Set();
+  for (const id of userIds) set.add(id);
+  chatMembers.set(chatId, set);
+};
+const inChat = (chatId, userId) => !!chatMembers.get(chatId)?.has(userId);
+
 export const api = new Proxy({}, {
   get(_, method) {
     return async (params) => {
       calls.push({ method, params });
       if (method === 'getMe') return { id: 1, username: 'atlas_test_bot' };
       if (method === 'sendMessage') return { message_id: ++msgId, chat: { id: params.chat_id } };
-      if (method === 'getChatMember') return { status: 'member' };
+      if (method === 'getChatMember') return { status: inChat(params.chat_id, params.user_id) ? 'member' : 'left' };
       return true;
     };
   },

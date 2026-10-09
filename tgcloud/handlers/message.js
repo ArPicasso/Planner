@@ -7,7 +7,7 @@ import { processText, undoBatch } from '../lib/router.js';
 import { askClaude } from '../lib/ai.js';
 import { resultText, resultKeyboard, listText, openUrl, HELP } from '../lib/format.js';
 import { escapeHtml as esc } from '../lib/parse.js';
-import { send, ensureBotUsername, sendSetup } from '../lib/telegram.js';
+import { send, ensureBotUsername, sendSetup, allowIfInKnownGroup } from '../lib/telegram.js';
 
 export default async function (message) {
   const from = message.from;
@@ -44,12 +44,14 @@ export default async function (message) {
     return;
   }
 
-  const user = await S.upsertUser(from, String(from.id) === owner);
+  let user = await S.upsertUser(from, String(from.id) === owner);
   let space = await S.spaceByChat(chat.id);
 
   if (isPrivate) {
+    // Добавили в общую группу, но он там ещё не писал — пускаем по членству.
+    if (!user.allowed && (await allowIfInKnownGroup(from.id))) user = { ...user, allowed: true };
     if (!user.allowed) {
-      await send(chat.id, 'Это закрытый бот. Чтобы пользоваться, попроси владельца добавить тебя в общую группу с ботом.');
+      await send(chat.id, 'Это закрытый бот. Попроси владельца добавить тебя в общую группу с ботом — после этого всё заработает.');
       return;
     }
     if (!space) space = await S.createSpace({ chatId: chat.id, title: 'Личное', kind: 'personal', ownerId: from.id });

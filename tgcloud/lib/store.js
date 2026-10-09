@@ -42,6 +42,9 @@ export async function isOwner(userId) {
 export async function spaceById(id) {
   return db.select().from(spaces).where(eq(spaces.id, Number(id))).get();
 }
+export async function sharedSpaces() {
+  return db.select().from(spaces).where(eq(spaces.kind, 'shared')).all();
+}
 export async function spaceByChat(chatId) {
   return db.select().from(spaces).where(eq(spaces.chatId, Number(chatId))).get();
 }

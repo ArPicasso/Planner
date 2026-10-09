@@ -137,5 +137,22 @@ ok(denied2, "friend cannot open Pavel's personal space");
 await msg(PAVEL, GROUP, '/list');
 ok(/Купить<\/b> · /.test(last('sendMessage').params.text), '/list prints sections');
 
+// 14. Добавили в группу, но человек там ещё ничего не писал
+const KATE = { id: 444, first_name: 'Катя' };
+sdk.joinChat(GROUP.id, KATE.id);
+await msg(KATE, priv(KATE), '/start');
+ok(!/закрытый бот/.test(last('sendMessage').params.text), 'a group member gets in without writing in the group');
+ok(schema.users.__rows.find((u) => u.id === 444)?.allowed === true, 'and is marked allowed');
+let kateApp = false;
+try { await ep.getSpace({ id: space.id }, ctxOf(KATE)); kateApp = true; } catch (e) { kateApp = false; }
+ok(kateApp, 'and can open the shared space in the Mini App');
+ok(schema.members.__rows.some((m) => m.spaceId === space.id && m.userId === 444), 'and is added to the space members');
+
+// 15. Кто не состоит ни в одной группе — по-прежнему чужой
+const OUTSIDER = { id: 555, first_name: 'Посторонний' };
+await msg(OUTSIDER, priv(OUTSIDER), '/start');
+ok(/закрытый бот/.test(last('sendMessage').params.text), 'a non-member is still refused');
+ok(schema.users.__rows.find((u) => u.id === 555)?.allowed === false, 'and stays not allowed');
+
 console.log(fails ? `\n${fails} FAILED` : '\nAll checks passed');
 process.exit(fails ? 1 : 0);

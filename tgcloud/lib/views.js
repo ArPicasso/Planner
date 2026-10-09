@@ -1,12 +1,15 @@
 // What the Mini App receives: caller checks and screen payloads.
 import { EndpointError, api } from 'sdk';
 import * as S from './store.js';
+import { allowIfInKnownGroup } from './telegram.js';
 
 export async function caller(ctx) {
   const u = ctx && ctx.initData && ctx.initData.user;
   if (!u) throw new EndpointError('Открой приложение из Telegram.', { code: 'NO_USER' });
   const owner = await S.getConfig('owner');
-  const user = await S.upsertUser(u, String(u.id) === owner);
+  let user = await S.upsertUser(u, String(u.id) === owner);
+  // То же, что и в личке: членства в общей группе достаточно.
+  if (!user.allowed && (await allowIfInKnownGroup(u.id))) user = { ...user, allowed: true };
   if (!user.allowed) throw new EndpointError('Это закрытый бот. Попроси владельца добавить тебя в общую группу.', { code: 'FORBIDDEN' });
   return user;
 }

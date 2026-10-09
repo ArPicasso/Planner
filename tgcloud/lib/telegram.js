@@ -23,3 +23,22 @@ export async function sendSetup(space) {
       { text: 'Просто список', callback_data: `tpl:${space.id}:empty` },
     ]] } });
 }
+
+// Человека добавили в общую группу, но он там ещё ничего не писал.
+// Членства в группе достаточно — спрашиваем у Telegram напрямую.
+const IN_CHAT = ['creator', 'administrator', 'member', 'restricted'];
+export async function allowIfInKnownGroup(userId) {
+  for (const space of await S.sharedSpaces()) {
+    if (!space.chatId) continue;
+    try {
+      const cm = await api.getChatMember({ chat_id: space.chatId, user_id: userId });
+      if (!IN_CHAT.includes(cm.status)) continue;
+    } catch (e) {
+      continue; // бота выгнали из чата или он не может спросить — пробуем следующий
+    }
+    await S.allowUser(userId);
+    await S.ensureMember(space.id, userId);
+    return space;
+  }
+  return null;
+}
