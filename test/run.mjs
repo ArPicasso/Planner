@@ -154,5 +154,24 @@ await msg(OUTSIDER, priv(OUTSIDER), '/start');
 ok(/закрытый бот/.test(last('sendMessage').params.text), 'a non-member is still refused');
 ok(schema.users.__rows.find((u) => u.id === 555)?.allowed === false, 'and stays not allowed');
 
+// 16. Бот узнаёт адрес Mini App от владельца
+await ep.bootstrap({ origin: 'https://app1.tgcloud.ai' }, ctxOf(PAVEL));
+const appCfg = () => schema.config.__rows.find((r) => r.key === 'app_url')?.value;
+ok(appCfg() === 'https://app1.tgcloud.ai', 'the owner opening the app teaches the bot its URL');
+await ep.bootstrap({ origin: 'https://evil.example.com' }, ctxOf(MISHA));
+ok(appCfg() === 'https://app1.tgcloud.ai', 'a non-owner cannot change the stored app URL');
+
+// 17. Кнопка: web_app в личке (один тап), ссылка t.me в группе (Bot API запрещает web_app)
+claude.next = JSON.stringify({ actionable: true, ops: [], reply: 'Ок.' });
+await msg(PAVEL, GROUP, 'что осталось?');
+const gBtn = last('sendMessage').params.reply_markup.inline_keyboard[0].find((b) => /Открыть/.test(b.text));
+ok(!!gBtn.url && !gBtn.web_app, 'in a group the button stays a t.me link');
+
+claude.next = JSON.stringify({ actionable: true, ops: [], reply: 'Ок.' });
+await msg(PAVEL, priv(PAVEL), 'что осталось?');
+const pBtn = last('sendMessage').params.reply_markup.inline_keyboard[0].find((b) => /Открыть/.test(b.text));
+ok(!!pBtn.web_app && !pBtn.url, 'in private it is a one-tap web_app button');
+ok(/^https:\/\/app1\.tgcloud\.ai\?s=\d+$/.test(pBtn.web_app.url), 'and carries the space id as ?s=');
+
 console.log(fails ? `\n${fails} FAILED` : '\nAll checks passed');
 process.exit(fails ? 1 : 0);

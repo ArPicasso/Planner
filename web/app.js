@@ -453,7 +453,13 @@ async function boot() {
   }
   app.replaceChildren(h('div', { class: 'empty', text: 'Загружаю…' }));
   try {
-    const r = await call('bootstrap', { start: (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '' });
+    // start_param приходит только при запуске по ссылке t.me?startapp=.
+    // Кнопка web_app открывает адрес напрямую, поэтому id пространства едет в ?s=.
+    const qs = new URLSearchParams(location.search).get('s');
+    const r = await call('bootstrap', {
+      start: (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || (qs ? `s${qs}` : ''),
+      origin: location.origin,
+    });
     S.home = r.home;
     const saved = Number(store.get('dest'));
     S.dest = r.home.spaces.some((s) => s.id === saved) ? saved : (r.home.spaces[0] && r.home.spaces[0].id);

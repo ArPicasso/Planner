@@ -5,7 +5,7 @@ import { spaces, batches, users, members } from '../schema.js';
 import * as S from '../lib/store.js';
 import { processText, undoBatch } from '../lib/router.js';
 import { askClaude } from '../lib/ai.js';
-import { resultText, resultKeyboard, listText, openUrl, HELP } from '../lib/format.js';
+import { resultText, resultKeyboard, listText, openUrl, openButton, HELP } from '../lib/format.js';
 import { escapeHtml as esc } from '../lib/parse.js';
 import { send, ensureBotUsername, sendSetup, allowIfInKnownGroup } from '../lib/telegram.js';
 
@@ -82,7 +82,7 @@ export default async function (message) {
   }
   await send(chat.id, resultText(res, user), {
     reply_parameters: { message_id: message.message_id, allow_sending_without_reply: true },
-    reply_markup: await resultKeyboard(res, space.id),
+    reply_markup: await resultKeyboard(res, space.id, isPrivate),
     disable_notification: true,
   });
 }
@@ -106,9 +106,9 @@ async function handleCommand({ cmd, arg, message, chat, from, user, space, isPri
   }
 
   if (cmd === 'app') {
-    const url = await openUrl(space.id);
-    if (!url) { await send(chat.id, 'Ссылка появится после первой команды боту. Попробуй ещё раз.'); return; }
-    await send(chat.id, 'Список с разделами и галочками:', { reply_markup: { inline_keyboard: [[{ text: 'Открыть', url }]] } });
+    const btn = await openButton(space.id, isPrivate, 'Открыть');
+    if (!btn) { await send(chat.id, 'Ссылка появится после первой команды боту. Попробуй ещё раз.'); return; }
+    await send(chat.id, 'Список с разделами и галочками:', { reply_markup: { inline_keyboard: [[btn]] } });
     return;
   }
 

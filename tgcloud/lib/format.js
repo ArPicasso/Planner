@@ -44,11 +44,30 @@ export async function openUrl(spaceId) {
   return username ? `https://t.me/${username}?startapp=s${spaceId}` : null;
 }
 
-export async function resultKeyboard(res, spaceId) {
+// Адрес Mini App, если владелец его задал (/setapp) или приложение само его сообщило.
+export async function appUrl(spaceId) {
+  const base = await S.getConfig('app_url');
+  if (!base) return null;
+  return `${base}${base.includes('?') ? '&' : '?'}s=${spaceId}`;
+}
+
+// Кнопка открытия списка. В личке — web_app: Mini App открывается одним тапом.
+// В группах Bot API запрещает web_app-кнопки, поэтому там остаётся ссылка t.me,
+// а она показывает промежуточный экран запуска — обойти это нельзя.
+export async function openButton(spaceId, isPrivate, text = 'Открыть список') {
+  if (isPrivate) {
+    const direct = await appUrl(spaceId);
+    if (direct) return { text, web_app: { url: direct } };
+  }
+  const url = await openUrl(spaceId);
+  return url ? { text, url } : null;
+}
+
+export async function resultKeyboard(res, spaceId, isPrivate = false) {
   const row = [];
   if (res.batchId) row.push({ text: 'Отменить', callback_data: `undo:${res.batchId}` });
-  const url = await openUrl(spaceId);
-  if (url) row.push({ text: 'Открыть список', url });
+  const btn = await openButton(spaceId, isPrivate);
+  if (btn) row.push(btn);
   return row.length ? { inline_keyboard: [row] } : undefined;
 }
 
