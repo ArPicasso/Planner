@@ -74,10 +74,10 @@ export async function homeState(user) {
   const t = S.today();
   const soonLimit = new Date(Date.parse(t + 'T00:00:00Z') + 14 * 864e5).toISOString().slice(0, 10);
   const spacesOut = [], claimed = [], soon = [], fresh = [];
-  const names = {};
+  const nameById = new Map();
   for (const sp of mine) {
     const [open, secs, mems] = await Promise.all([S.openItems(sp.id, 500), S.spaceSections(sp.id), S.spaceMembers(sp.id)]);
-    for (const m of mems) names[m.id] = m.name;
+    for (const m of mems) nameById.set(m.id, m.name);
     const secTitle = Object.fromEntries(secs.map((s) => [s.id, s.title]));
     const tag = (it) => ({ ...pub(it), spaceId: sp.id, spaceTitle: sp.title, sectionTitle: secTitle[it.sectionId] || '' });
     let freshCount = 0;
@@ -102,6 +102,9 @@ export async function homeState(user) {
     claimed: claimed.slice(0, 30),
     soon: soon.slice(0, 30),
     fresh: fresh.slice(0, 20),
-    names,
+    // Массивом, а не объектом: числовой id становится индексным свойством V8,
+    // и сериализация результата на границе изолята падает
+    // ("Cannot convert: v8::Object key is not a string").
+    names: [...nameById].map(([id, name]) => ({ id, name })),
   };
 }

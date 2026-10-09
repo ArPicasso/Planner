@@ -174,5 +174,23 @@ ok(!!pBtn.web_app && !pBtn.url, 'in private it is a one-tap web_app button');
 ok(/^https:\/\/app1\.tgcloud\.ai\/\?s=\d+$/.test(pBtn.web_app.url), 'and carries the space id as ?s= after a path');
 ok(!/\.ai\?/.test(pBtn.web_app.url), 'the URL is never missing the path before ?  (Telegram rejects those)');
 
+// 18. Результат эндпоинта должен переживать сериализацию платформы.
+// Числовой ключ в объекте V8 хранит как индексное свойство, и платформа падает с
+// "Cannot convert: v8::Object key is not a string". Возвращать такое нельзя ниоткуда.
+const numericKeys = (v, path) => {
+  if (Array.isArray(v)) return v.flatMap((x, i) => numericKeys(x, `${path}[${i}]`));
+  if (v && typeof v === 'object') {
+    return Object.keys(v).flatMap((k) =>
+      (/^\d+$/.test(k) ? [`${path}.${k}`] : []).concat(numericKeys(v[k], `${path}.${k}`)));
+  }
+  return [];
+};
+const serialBad = [
+  ['bootstrap', await ep.bootstrap({}, ctxOf(PAVEL))],
+  ['getSpace', await ep.getSpace({ id: space.id }, ctxOf(PAVEL))],
+  ['undo', await ep.undo({ space: space.id }, ctxOf(PAVEL)).catch(() => ({}))],
+].flatMap(([n, r]) => numericKeys(r, n));
+ok(serialBad.length === 0, `endpoint results survive serialization${serialBad.length ? ' — bad keys: ' + serialBad.join(', ') : ''}`);
+
 console.log(fails ? `\n${fails} FAILED` : '\nAll checks passed');
 process.exit(fails ? 1 : 0);

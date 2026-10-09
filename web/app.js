@@ -191,10 +191,16 @@ function renderHome() {
   renderDest();
 }
 
+// Сервер отдаёт имена массивом (см. homeState) — в браузере удобнее объектом.
+const homeWithNames = (home) => ({
+  ...home,
+  names: Object.fromEntries((home.names || []).map((n) => [n.id, n.name])),
+});
+
 async function reloadHome() {
   try {
     const r = await call('bootstrap', {});
-    S.home = r.home;
+    S.home = homeWithNames(r.home);
     if (S.view === 'home') render();
   } catch (e) { toast(errText(e)); }
 }
@@ -460,7 +466,7 @@ async function boot() {
       start: (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || (qs ? `s${qs}` : ''),
       origin: location.origin,
     });
-    S.home = r.home;
+    S.home = homeWithNames(r.home);
     const saved = Number(store.get('dest'));
     S.dest = r.home.spaces.some((s) => s.id === saved) ? saved : (r.home.spaces[0] && r.home.spaces[0].id);
     if (r.open) openSpace(r.open); else render();
