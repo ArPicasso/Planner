@@ -80,11 +80,18 @@ export default async function (message) {
     if (isPrivate) await send(chat.id, 'Не нашёл, что записать. Напиши, что нужно купить, сделать или обсудить.');
     return;
   }
-  await send(chat.id, resultText(res, user), {
+  const extra = {
     reply_parameters: { message_id: message.message_id, allow_sending_without_reply: true },
-    reply_markup: await resultKeyboard(res, space.id, isPrivate),
     disable_notification: true,
-  });
+  };
+  try {
+    await send(chat.id, resultText(res, user), { ...extra, reply_markup: await resultKeyboard(res, space.id, isPrivate) });
+  } catch (e) {
+    // Кнопку Telegram может отвергнуть (например, кривой адрес Mini App).
+    // Разбор сообщения важнее кнопки — отправляем без неё.
+    console.warn('reply with keyboard failed', e && (e.description || e.message));
+    await send(chat.id, resultText(res, user), extra);
+  }
 }
 
 async function handleCommand({ cmd, arg, message, chat, from, user, space, isPrivate, owner }) {

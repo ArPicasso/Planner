@@ -46,9 +46,14 @@ export async function openUrl(spaceId) {
 
 // Адрес Mini App, если владелец его задал (/setapp) или приложение само его сообщило.
 export async function appUrl(spaceId) {
-  const base = await S.getConfig('app_url');
-  if (!base) return null;
-  return `${base}${base.includes('?') ? '&' : '?'}s=${spaceId}`;
+  const raw = ((await S.getConfig('app_url')) || '').trim();
+  if (!/^https:\/\/[^\s]+$/.test(raw)) return null;
+  const [beforeHash] = raw.split('#');
+  const [path, query = ''] = beforeHash.split('?');
+  // Telegram отклоняет web_app-URL без пути перед query, поэтому нужен хотя бы "/":
+  // location.origin приходит как "https://host" — без слеша на конце.
+  const base = path.slice('https://'.length).includes('/') ? path : `${path}/`;
+  return `${base}?${query ? `${query}&` : ''}s=${spaceId}`;
 }
 
 // Кнопка открытия списка. В личке — web_app: Mini App открывается одним тапом.

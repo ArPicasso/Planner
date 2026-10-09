@@ -171,7 +171,8 @@ claude.next = JSON.stringify({ actionable: true, ops: [], reply: 'Ок.' });
 await msg(PAVEL, priv(PAVEL), 'что осталось?');
 const pBtn = last('sendMessage').params.reply_markup.inline_keyboard[0].find((b) => /Открыть/.test(b.text));
 ok(!!pBtn.web_app && !pBtn.url, 'in private it is a one-tap web_app button');
-ok(/^https:\/\/app1\.tgcloud\.ai\?s=\d+$/.test(pBtn.web_app.url), 'and carries the space id as ?s=');
+ok(/^https:\/\/app1\.tgcloud\.ai\/\?s=\d+$/.test(pBtn.web_app.url), 'and carries the space id as ?s= after a path');
+ok(!/\.ai\?/.test(pBtn.web_app.url), 'the URL is never missing the path before ?  (Telegram rejects those)');
 
 console.log(fails ? `\n${fails} FAILED` : '\nAll checks passed');
 process.exit(fails ? 1 : 0);
