@@ -175,6 +175,8 @@ async function handleCommand({ cmd, arg, message, chat, from, user, space, isPri
     const lines = [
       `<b>owner:</b> <code>${esc(String(owner))}</code>`,
       `<b>ключ Claude:</b> ${(await S.getConfig('anthropic_key')) ? 'есть' : 'НЕТ'}`,
+      `<b>app_url:</b> <code>${esc((await S.getConfig('app_url')) || '(не задан)')}</code>`,
+      `<b>ссылка для группы:</b> <code>${esc((await openUrl(space.id)) || '(нет bot_username)')}</code>`,
       '',
       `<b>users (${us.length}):</b>`,
       ...us.map((u) => `  <code>${u.id}</code> ${esc(u.name)} — allowed=${u.allowed}`),
